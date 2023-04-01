@@ -47,7 +47,7 @@
             // Therefore, there is no need to convert string labels into
             // a one-hot encoded array of label values like we did in the
             // Iris dataset example. 
-            const convertedTestingData = await testingData.batch(10).toArray();
+            const convertedTestingData = await testingData.toArray();
                   
 
             // Specify the number of features in the space below.
