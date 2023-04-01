@@ -26,8 +26,27 @@
             // Therefore, there is no need to convert string labels into
             // a one-hot encoded array of label values like we did in the
             // Iris dataset example. 
-            const convertedTrainingData = await trainingData.toArray();
-                  
+
+            const convertedTrainingDataArr = await trainingData.batch(10).toArray();
+            const convertedTrainingData = await convertedTrainingDataArr.map(record => {
+                const features = Object.keys(record).filter(key => key !== 'diagnosis');
+                const featureValues = features.map(feature => record[feature]);
+                const labelValue = parseInt(record['diagnosis'], 10);
+                return { xs: featureValues, ys: labelValue };
+            });
+            console.log(convertedTrainingData)
+            const converterTrainingFeatures = await convertedTrainingData.map(record => {
+                return record['xs']
+                });
+                console.log(converterTrainingFeatures)
+                const converterTrainingFeaturesTensor = tf.tensor(converterTrainingFeatures)
+                const converterTrainingLabels = await convertedTrainingData.map(record => {
+                return record['ys']
+                });
+                
+                const converterTrainingLabelsTensor = tf.tensor(converterTrainingLabels)
+            <!-- const trainTensor = tf.tensor(convertedTrainingData['xs']) -->
+            console.log(convertedTrainingData['xs']);
             const testingUrl = '/data/wdbc-test.csv';
             
             // Take a look at the 'wdbc-test.csv' file and specify the column
@@ -47,9 +66,16 @@
             // Therefore, there is no need to convert string labels into
             // a one-hot encoded array of label values like we did in the
             // Iris dataset example. 
-            const convertedTestingData = await testingData.toArray();
-                  
+            const convertedTestingData = await testingData.map(record => {
+                const features = Object.keys(record).filter(key => key !== 'diagnosis');
+                const featureValues = features.map(feature => record[feature]);
+                const labelValue = parseInt(record['diagnosis'], 10);
+                return { xs: featureValues, ys: labelValue };
+            }).batch(10);
+            console.log(typeof(convertedTestingData));
 
+            console.log(convertedTestingData);
+    
             // Specify the number of features in the space below.
             // HINT: You can get the number of features from the number of columns
             // and the number of labels in the training data. 
@@ -68,9 +94,9 @@
             model.add(tf.layers.dense({ inputShape: [numOfFeatures], units: 64, activation: 'relu' }));
             model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
             model.add(tf.layers.dense({ units: 1, activation: 'sigmoid' }));
-
+    
             model.summary();    
-
+            
             // Compile the model using the binaryCrossentropy loss, 
             // the rmsprop optimizer, and accuracy for your metrics. 
             model.compile({
@@ -78,18 +104,17 @@
                 optimizer: 'rmsprop',
                 metrics: ['accuracy']
               });
-            
-            
-            await model.fitDataset(convertedTrainingData, 
-                             {epochs:100,
-                              validationData: convertedTestingData,
-                              callbacks:{
-                                  onEpochEnd: async(epoch, logs) =>{
-                                      console.log("Epoch: " + epoch + " Loss: " + logs.loss + " Accuracy: " + logs.acc);
-                                  }
-                              }});
-            await model.save('downloads://my_model');
+              await model.fit(convertedTrainingData, 
+              {epochs:100,
+               validationData: convertedTestingData,
+               callbacks:{
+                   onEpochEnd: async(epoch, logs) =>{
+                       console.log("Epoch: " + epoch + " Loss: " + logs.loss + " Accuracy: " + logs.acc);
+                   }
+               }});
+                await model.save('downloads://my_model');
         }
+        
         run();
     </script>
 <body>
